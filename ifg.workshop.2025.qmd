@@ -2,7 +2,7 @@
 title: "Pandemic projections"
 author: 
   - "Imperial College London"
-format: beamer
+format: revealjs
 editor_options: 
   chunk_output_type: console
 ---
@@ -155,6 +155,8 @@ data_econ_cost_absences <- filter(
   data_econ_costs, cost_type == "economic_cost_absences"
 )
 ```
+
+# Introduction
 
 ## What we know
 
@@ -330,7 +332,7 @@ ggplot(data_deaths_unmit) +
     )
   ) +
   theme_light()
-``` 
+```
 
 ## Lost life years, future earnings, and GVA
 
@@ -695,6 +697,334 @@ ggplot(data_econ_cost_absences) +
       individuals are unable to work.
       "
     ),
+    title = "Economic losses due to illness-related absences and deaths"
+  ) +
+  guides(
+    colour = guide_legend(
+      override.aes = list(linewidth = 3)
+    )
+  ) +
+  theme_light()
+```
+
+## Economic losses: Closures
+
+```{r}
+ggplot(data_econ_cost_closures) +
+  geom_col(
+    aes(response, cost, fill = response),
+    show.legend = FALSE
+  ) +
+  scale_x_discrete(
+    name = "Mitigation response",
+    labels = response_labels
+  ) +
+  scale_y_continuous(
+    labels = scales::label_currency(
+      scale = 1e-3, suffix = "B"
+    ),
+    name = "Value lost in billion $"
+  ) +
+  scale_fill_brewer(
+    palette = "Dark2"
+  ) +
+  theme_light() +
+  labs(
+    caption = "All values are cumulative over 100 days.",
+    title = "Economic losses due to mitigation measures"
+  )
+```
+
+# Stage 2: Choosing a response
+
+```{r}
+response <- "economic_closures"
+time_start <- 21
+time_end <- 60
+
+output <- run_scenarios(
+  "GBR",
+  disease_list,
+  response = response,
+  response_time_start = time_start, response_time_end = time_end,
+  duration = 100
+)
+```
+
+```{r echo=FALSE, include=FALSE}
+# get epi curve data and prepare for plotting
+data_epi_curve <- get_epicurve_data(output, disease_tags, format = "long")
+
+data_epi_curve <- group_by(
+  data_epi_curve, time, response, measure
+) %>%
+  curve_interval(
+    value,
+    .width = c(0.5, 0.95)
+  )
+```
+
+```{r echo=FALSE, include=FALSE}
+data_epi_summary <- get_summary_data(output, disease_tags, format = "long")
+```
+
+```{r echo=FALSE, include=FALSE}
+data_deaths <- get_summary_data(
+  output, disease_tags,
+  format = "long", measures = "deaths", groups = "age_group"
+)
+```
+
+```{r echo=FALSE, include=FALSE}
+data_cost_output <- get_cost_data(output, disease_tags, format = "long")
+
+data_cost_life <- filter(data_cost_output, domain == "life_years")
+```
+
+```{r echo=FALSE, include=FALSE}
+# NOTE: education costs are very similar across R0
+# as the main component is future earnings lost due to school closures;
+# this aspect is deterministic: value school year * closure duration;
+# summaring this as a median to show a bar chart
+data_cost_edu <- filter(data_cost_output, domain == "education") %>%
+  summarise(
+    cost = median(cost), .by = "response"
+  )
+```
+
+```{r echo=FALSE, include=FALSE}
+data_econ_costs <- get_econ_cost_data(output)
+
+# separate data on closures (deterministic) from absences
+# and summarise closure costs using median
+data_econ_cost_closures <- filter(
+  data_econ_costs, cost_type == "economic_cost_closures"
+) %>%
+  group_by(response) %>%
+  summarise(cost = median(cost))
+
+data_econ_cost_absences <- filter(
+  data_econ_costs, cost_type == "economic_cost_absences"
+)
+```
+
+## Epidemic projections
+
+```{r echo=FALSE}
+ggplot(
+  data_epi_curve,
+  aes(time, value)
+) +
+  geom_lineribbon(
+    aes(ymin = .lower, ymax = .upper),
+    linewidth = 0.1,
+    col = "black",
+    alpha = 0.8
+  ) +
+  facet_wrap(
+    facets = vars(measure),
+    scales = "free",
+    labeller = labeller(
+      measure = curve_measure_labels
+    )
+  ) +
+  scale_fill_brewer(
+    palette = "YlOrRd",
+    labels = function(x) {
+      scales::percent(as.numeric(x))
+    }
+  ) +
+  scale_y_continuous(
+    labels = scales::comma
+  ) +
+  labs(
+    x = x_label_days,
+    y = NULL,
+    fill = "Conf. interv.",
+    caption = "All values are daily."
+  ) +
+  theme_light()
+```
+
+## Infections, hospital demand, deaths
+
+```{r echo=FALSE}
+ggplot(data_epi_summary) +
+  stat_interval(
+    aes(
+      y = value,
+      color = after_stat(
+        level
+      )
+    ),
+    .width = c(0.5, 0.95),
+    linewidth = 30,
+    normalize = "groups"
+  ) +
+  stat_pointinterval(
+    aes(y = value)
+  ) +
+  facet_wrap(
+    facets = vars(measure),
+    labeller = labeller(
+      measure = summary_measure_labels
+    ),
+    scales = "free"
+  ) +
+  scale_y_continuous(
+    labels = scales::comma
+  ) +
+  scale_colour_brewer(
+    palette = "YlOrRd",
+    direction = 1,
+    breaks = c("0.5", "0.95"),
+    labels = function(x) {
+      scales::percent(as.numeric(x))
+    }
+  ) +
+  labs(
+    x = NULL,
+    y = "Count",
+    colour = "Conf. interv.",
+    caption = "All values are cumulative over 100 days."
+  ) +
+  guides(
+    colour = guide_legend(
+      override.aes = list(linewidth = 3)
+    )
+  ) +
+  theme_light()
+```
+
+## Deaths by age group
+
+```{r echo=FALSE}
+ggplot(data_deaths) +
+  stat_interval(
+    aes(
+      y = value,
+      color = after_stat(
+        level
+      )
+    ),
+    .width = c(0.5, 0.95),
+    linewidth = 30,
+    normalize = "groups"
+  ) +
+  stat_pointinterval(
+    aes(y = value)
+  ) +
+  facet_wrap(
+    facets = vars(age_group),
+    scales = "free",
+    labeller = label_both
+  ) +
+  scale_y_continuous(
+    labels = scales::comma
+  ) +
+  scale_color_brewer(
+    palette = "YlOrRd",
+    direction = 1,
+    labels = function(x) {
+      scales::percent(as.numeric(x))
+    }
+  ) +
+  labs(
+    y = "Count",
+    x = NULL,
+    colour = "Conf. interv.",
+    caption = "All values are cumulative over 100 days."
+  ) +
+  guides(
+    colour = guide_legend(
+      override.aes = list(linewidth = 3)
+    )
+  ) +
+  theme_light()
+```
+
+## Lost life years, future earnings, and GVA
+
+```{r echo=FALSE}
+ggplot(data_cost_output) +
+  stat_interval(
+    aes(
+      x = domain, y = cost,
+      color = after_stat(
+        level
+      )
+    ),
+    .width = c(0.5, 0.95),
+    linewidth = 30,
+    normalize = "groups"
+  ) +
+  stat_pointinterval(
+    aes(domain, cost)
+  ) +
+  scale_x_discrete(
+    labels = loss_measure_labels
+  ) +
+  scale_y_continuous(
+    labels = scales::label_currency(
+      scale = 1e-3, prefix = "$", suffix = " B"
+    )
+  ) +
+  scale_color_brewer(
+    palette = "YlOrRd",
+    direction = 1,
+    labels = function(x) {
+      scales::percent(as.numeric(x))
+    }
+  ) +
+  labs(
+    x = NULL,
+    y = "Cumulative value lost in billion $",
+    col = "Conf. interv.",
+    caption = "All values are cumulative over 100 days."
+  ) +
+  guides(
+    colour = guide_legend(
+      override.aes = list(linewidth = 3)
+    )
+  ) +
+  theme_light()
+```
+
+## Economic losses: Absences
+
+```{r}
+ggplot(data_econ_cost_absences) +
+  stat_interval(
+    aes(
+      y = cost,
+      color = after_stat(
+        level
+      )
+    ),
+    .width = c(0.5, 0.95),
+    linewidth = 30,
+    normalize = "groups"
+  ) +
+  stat_pointinterval(
+    aes(y = cost)
+  ) +
+  scale_y_continuous(
+    labels = scales::label_currency(
+      scale = 1e-3, prefix = "$", suffix = " B"
+    )
+  ) +
+  scale_colour_brewer(
+    palette = "YlOrRd",
+    direction = 1,
+    labels = function(x) {
+      scales::percent(as.numeric(x))
+    }
+  ) +
+  labs(
+    y = "Value lost in billion $",
+    x = NULL,
+    colour = "Conf. interv.",
+    caption = "All values are cumulative over 100 days.",
     title = "Economic losses due to illness-related absences and deaths"
   ) +
   guides(
