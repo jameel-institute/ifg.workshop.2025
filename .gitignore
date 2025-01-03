@@ -1,0 +1,5 @@
+/.quarto/
+*.html
+*.pptx
+*_files
+.Rproj.user
