@@ -97,7 +97,7 @@ response_levels <- rev(names(daedalus::closure_data))
 
 ```{r}
 day_now <- 30
-horizon = 60
+horizon <- 60
 ```
 
 ```{r echo=FALSE, include=FALSE}
@@ -202,24 +202,6 @@ data_econ_cost_closures <- filter(
 data_econ_cost_absences <- filter(
   data_econ_costs, cost_type == "economic_cost_absences"
 )
-```
-
-# Introduction
-
-## What we know
-
--   Median $R_0$: `r median(r0_summary)`
-
--   Lower and upper $R_0$ estimates: `r glue::glue("({r0_summary['lower']}, {r0_summary['upper']})")`
-
-```{r echo=FALSE}
-# ggplot() +
-#   stat_histinterval(aes(r0_samples)) +
-#   labs(
-#     title = "Uncertainty in R0",
-#     x = "R0", y = NULL
-#   ) +
-#   theme_light()
 ```
 
 # Unmitigated pandemic
@@ -581,7 +563,7 @@ curve_measure_labels <- c(
 response_labels <- c(
   none = "Unmitigated",
   economic_closures = "Business closures",
-  elimination = "School and business closures",
+  elimination = "S+B closures",
   school_closures = "School closures"
 )
 ```
@@ -777,6 +759,27 @@ ggsave(
 )
 ```
 
+## Table: Hospital capacity breaches
+
+```{r}
+data_epi_curve %>%
+  filter(
+    measure == "total_hosp"
+  ) %>%
+  group_by(response, tag) %>%
+  filter(
+    value == max(value),
+    value > hosp_capacity
+  ) %>%
+  group_by(response) %>%
+  count(
+    name = "hosp_capacity_exceeded_pct"
+  ) %>%
+  readr::write_csv(
+    "tables/table_hosp_capacity_breaches.csv"
+  )
+```
+
 ## Deaths by age group
 
 ```{r}
@@ -897,10 +900,39 @@ plot_compare_deaths_by_age <-
   fn_theme()
 
 ggsave(
-  "figures/plot_compare_deaths_by_age_square.png.png",
+  "figures/plot_compare_deaths_by_age_square.png",
   plot_compare_deaths_by_age,
   height = 14, width = 14
 )
+```
+
+## Table: Deaths by age
+
+```{r}
+fn_qtl <- function(x, probs = c(0.5, 0.25, 0.75)) {
+  tibble(
+    val = round(quantile(x, probs, na.rm = TRUE)),
+    quant = glue::glue("pctl_{probs * 100}")
+  ) %>%
+    pivot_wider(names_from = "quant", values_from = "val")
+}
+```
+
+```{r}
+data_deaths %>%
+  group_by(response, age_group) %>%
+  reframe(fn_qtl(value)) %>%
+  mutate(
+    response = case_when(
+      response == "none" ~ "unmitigated",
+      response == "economic_closures" ~ "business_closures",
+      response == "elimination" ~ "S+B closures",
+      .default = response
+    )
+  ) %>%
+  readr::write_csv(
+    file = "tables/table_deaths_by_age.csv"
+  )
 ```
 
 ## Lost life years, future earnings, and GVA
@@ -1021,61 +1053,23 @@ ggsave(
 )
 ```
 
-## Pandemic potential frontier
+## Table: All-domain losses
 
 ```{r}
-data_cost_wide <- pivot_wider(
-  data_cost_output,
-  id_cols = c("response", "duration", "tag"),
-  values_from = "cost", names_from = "domain"
-)
-
-data_cost_wide <- mutate(
-  data_cost_wide,
-  econ = economic + education,
-  health = life_value
-)
-```
-
-```{r}
-plot_ppf <-
-  ggplot(data_cost_wide) +
-  geom_abline(
-    slope = -1, intercept = seq(1, 4) * 35e3 * (1 / 0.7),
-    linewidth = 0.2
-  ) +
-  geom_point(
-    aes(health, econ, col = response),
-    alpha = 0.5, size = 5
-  ) +
-  scale_colour_brewer(
-    palette = "Dark2",
-    name = NULL,
-    labels = response_labels
-  ) +
-  scale_y_continuous(
-    labels = scales::label_currency(
-      scale = 0.7e-3, prefix = "£",
-      suffix = " B", accuracy = 1
+data_cost_output %>%
+  group_by(response, domain) %>%
+  reframe(fn_qtl(cost)) %>%
+  mutate(
+    response = case_when(
+      response == "none" ~ "unmitigated",
+      response == "economic_closures" ~ "business_closures",
+      response == "elimination" ~ "S+B closures",
+      .default = response
     )
-  ) +
-  scale_x_continuous(
-    labels = scales::label_currency(
-      scale = 0.7e-3, prefix = "£",
-      suffix = " B", accuracy = 1
-    )
-  ) +
-  labs(
-    x = "Health losses in billion £",
-    y = "Economic losses in billion £"
-  ) +
-  theme_bw(24, "Arial") +
-  fn_theme()
-
-ggsave(
-  "figures/plot_ppf.png",
-  plot_ppf
-)
+  ) %>%
+  readr::write_csv(
+    file = "tables/table_cost_by_response.csv"
+  )
 ```
 
 ## Economic losses: Absences
@@ -1168,3 +1162,23 @@ ggsave(
   plot_compare_econ_cost_closures
 )
 ```
+
+## Table: Economic costs breakdown
+
+```{r}
+data_econ_costs %>%
+  group_by(response, cost_type) %>%
+  reframe(fn_qtl(cost)) %>%
+  mutate(
+    response = case_when(
+      response == "none" ~ "unmitigated",
+      response == "economic_closures" ~ "business_closures",
+      response == "elimination" ~ "S+B closures",
+      .default = response
+    )
+  ) %>%
+  readr::write_csv(
+    file = "tables/table_econ_cost_breakdown.csv"
+  )
+```
+
