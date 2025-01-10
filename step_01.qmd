@@ -95,6 +95,11 @@ disease_tags <- glue::glue("sample_{seq_along(disease_list)}")
 response_levels <- rev(names(daedalus::closure_data))
 ```
 
+```{r}
+day_now <- 30
+horizon = 60
+```
+
 ```{r echo=FALSE, include=FALSE}
 gbr <- daedalus_country("GBR")
 hosp_capacity <- gbr$hospital_capacity
@@ -107,8 +112,8 @@ output <- run_scenarios(
     "none", "school_closures",
     "economic_closures", "elimination"
   ),
-  response_time_start = 8, response_time_end = 90,
-  duration = 60
+  response_time_start = day_now + 1, response_time_end = horizon,
+  duration = horizon
 )
 ```
 
@@ -230,11 +235,6 @@ curve_measure_labels <- c(
 ```
 
 ### Daily infections: Explainer
-
-```{r}
-day_now <- 30
-```
-
 
 ```{r}
 plot_daily_infections_unmit_explainer <- ggplot() +
@@ -469,7 +469,7 @@ plot_unmit_deaths_by_age <- ggplot(data_deaths_unmit) +
     aes(age_group, y = value),
     .width = c(0.5, 0.95),
   ) +
-  scale_y_sqrt(
+  scale_y_continuous(
     labels = scales::comma
   ) +
   scale_colour_viridis_d(
@@ -534,7 +534,7 @@ plot_unmit_gva_loss <-
   scale_x_discrete(
     labels = loss_measure_labels
   ) +
-  scale_y_sqrt(
+  scale_y_continuous(
     labels = scales::label_currency(
       scale = 0.7e-3, prefix = "£", suffix = " B"
     )
@@ -712,7 +712,6 @@ Map(
 )
 ```
 
-
 ## Infections, hospital demand, deaths
 
 ```{r echo=FALSE}
@@ -809,7 +808,7 @@ plot_compare_deaths_by_age <-
       response = response_labels
     )
   ) +
-  scale_y_sqrt(
+  scale_y_continuous(
     labels = scales::comma
   ) +
   scale_x_discrete(
@@ -871,7 +870,7 @@ plot_compare_deaths_by_age <-
       response = response_labels
     )
   ) +
-  scale_y_sqrt(
+  scale_y_continuous(
     labels = scales::comma
   ) +
   scale_x_discrete(
@@ -904,7 +903,6 @@ ggsave(
 )
 ```
 
-
 ## Lost life years, future earnings, and GVA
 
 ```{r}
@@ -933,7 +931,7 @@ plot_compare_gva_loss <-
   scale_x_discrete(
     labels = loss_measure_labels
   ) +
-  scale_y_sqrt(
+  scale_y_continuous(
     labels = scales::label_currency(
       scale = 0.7e-3, prefix = "£",
       suffix = " B", accuracy = 1
@@ -991,7 +989,7 @@ plot_compare_gva_loss <-
   scale_x_discrete(
     labels = loss_measure_labels
   ) +
-  scale_y_sqrt(
+  scale_y_continuous(
     labels = scales::label_currency(
       scale = 0.7e-3, prefix = "£",
       suffix = " B", accuracy = 1
@@ -1022,7 +1020,6 @@ ggsave(
   height = 14, width = 14
 )
 ```
-
 
 ## Pandemic potential frontier
 
@@ -1101,7 +1098,7 @@ plot_compare_econ_cost_absences <-
   stat_pointinterval(
     aes(response, y = cost)
   ) +
-  scale_y_sqrt(
+  scale_y_continuous(
     labels = scales::label_currency(
       scale = 0.7e-3, prefix = "£",
       suffix = " B", accuracy = 1
@@ -1149,7 +1146,7 @@ plot_compare_econ_cost_closures <-
     labels = response_labels,
     guide = guide_axis(n.dodge = 2)
   ) +
-  scale_y_sqrt(
+  scale_y_continuous(
     labels = scales::label_currency(
       scale = 0.7e-3, prefix = "£",
       suffix = " B", accuracy = 1
