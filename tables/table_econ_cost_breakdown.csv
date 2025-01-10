@@ -1,0 +1,9 @@
+response,cost_type,pctl_50,pctl_25,pctl_75
+unmitigated,economic_cost_closures,0,0,0
+unmitigated,economic_cost_absences,699,117,4211
+school_closures,economic_cost_closures,15905,15905,15905
+school_closures,economic_cost_absences,499,85,3244
+business_closures,economic_cost_closures,4364,4364,4364
+business_closures,economic_cost_absences,652,110,3977
+S+B closures,economic_cost_closures,55324,55324,55324
+S+B closures,economic_cost_absences,239,42,1670
