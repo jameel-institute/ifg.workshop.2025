@@ -96,17 +96,17 @@ disease_tags <- glue::glue("sample_{seq_along(disease_list)}")
 # choose response
 # simulate business and school closures but with schools open
 # NOTE: THIS IS AN EXAMPLE, MODIFY THIS CODE TO RUN RESULTS
-response = daedalus::closure_data$elimination
-i_EDUCATION_SECTOR = 41L
-response[i_EDUCATION_SECTOR] = 1.0
+response <- daedalus::closure_data$elimination
+i_EDUCATION_SECTOR <- 41L
+response[i_EDUCATION_SECTOR] <- 1.0
 ```
 
 ```{r}
 # NOTE: TIME HORIZON
-horizon = 120L
+horizon <- 120L
 # NOTE: RESPONSE START AND END TIMES
-response_start = 45 # this can change based on participants' choice
-response_end = 120 # this should be fixed for Step 3
+response_start <- 45 # this can change based on participants' choice
+response_end <- 120 # this should be fixed for Step 3
 ```
 
 ```{r echo=FALSE, include=FALSE}
@@ -141,7 +141,7 @@ data_epi_curve_summary <- group_by(
 data_epi_summary <- get_summary_data(output, disease_tags, format = "long")
 
 # get deaths by age
-data_deaths = get_summary_data(
+data_deaths <- get_summary_data(
   output, disease_tags,
   format = "long", measures = "deaths", groups = "age_group"
 )
@@ -164,15 +164,15 @@ data_econ_cost_absences <- filter(
 
 ```{r}
 # set current day
-day_zero = 30
-day_now = 60
+day_zero <- 30
+day_now <- 60
 ```
 
 ```{r}
 # FIGURES: epi curves
 measures <- c(
-    "daily_infections", "daily_hospitalisations",
-    "total_hosp", "daily_deaths"
+  "daily_infections", "daily_hospitalisations",
+  "total_hosp", "daily_deaths"
 )
 
 curve_measure_labels <- c(
@@ -182,7 +182,7 @@ curve_measure_labels <- c(
   daily_deaths = "New deaths"
 )
 
-plots_epi_curves = Map(
+plots_epi_curves <- Map(
   measures, curve_measure_labels,
   f = function(m, l) {
     plot_epi_curves <-
@@ -236,7 +236,7 @@ plots_epi_curves = Map(
           col = "red", linetype = "dashed"
         )
     }
-    
+
     plot_epi_curves
   }
 )
@@ -433,7 +433,7 @@ ggplot(data_cost_output) +
 
 ```{r}
 # assume choice to lift closures at day 100
-response_end = 100 # can be changed
+response_end <- 100 # can be changed
 ```
 
 ```{r echo=FALSE, include=FALSE}
@@ -468,7 +468,7 @@ data_epi_curve_summary <- group_by(
 data_epi_summary <- get_summary_data(output, disease_tags, format = "long")
 
 # get deaths by age
-data_deaths = get_summary_data(
+data_deaths <- get_summary_data(
   output, disease_tags,
   format = "long", measures = "deaths", groups = "age_group"
 )
@@ -491,15 +491,15 @@ data_econ_cost_absences <- filter(
 
 ```{r}
 # set current day
-day_zero = 30
-day_now = 60
+day_zero <- 30
+day_now <- 60
 ```
 
 ```{r}
 # FIGURES: epi curves
 measures <- c(
-    "daily_infections", "daily_hospitalisations",
-    "total_hosp", "daily_deaths"
+  "daily_infections", "daily_hospitalisations",
+  "total_hosp", "daily_deaths"
 )
 
 curve_measure_labels <- c(
@@ -509,7 +509,7 @@ curve_measure_labels <- c(
   daily_deaths = "New deaths"
 )
 
-plots_epi_curves = Map(
+plots_epi_curves <- Map(
   measures, curve_measure_labels,
   f = function(m, l) {
     plot_epi_curves <-
@@ -562,7 +562,7 @@ plots_epi_curves = Map(
           col = "red", linetype = "dashed"
         )
     }
-    
+
     plot_epi_curves
   }
 )
