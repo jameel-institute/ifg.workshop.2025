@@ -147,7 +147,8 @@ data_deaths <- get_summary_data(
 )
 
 # get losses data
-data_cost_output <- get_cost_data(output, disease_tags, format = "long")
+data_cost_output <- get_cost_data(output, disease_tags, format = "long") %>%
+  filter(domain != "life_years")
 
 # separate economic losses into closures and absences
 data_econ_costs <- get_econ_cost_data(output)
@@ -474,7 +475,8 @@ data_deaths <- get_summary_data(
 )
 
 # get losses data
-data_cost_output <- get_cost_data(output, disease_tags, format = "long")
+data_cost_output <- get_cost_data(output, disease_tags, format = "long") %>%
+  filter(domain != "life_years")
 
 # separate economic losses into closures and absences
 data_econ_costs <- get_econ_cost_data(output)

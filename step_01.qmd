@@ -164,7 +164,8 @@ data_deaths_unmit <- filter(data_deaths, response == "none")
 ```
 
 ```{r echo=FALSE, include=FALSE}
-data_cost_output <- get_cost_data(output, disease_tags, format = "long")
+data_cost_output <- get_cost_data(output, disease_tags, format = "long") %>%
+  filter(domain != "life_years")
 data_cost_output <- mutate(
   data_cost_output,
   response = forcats::fct_relevel(response, response_levels)
@@ -1181,4 +1182,3 @@ data_econ_costs %>%
     file = "tables/table_econ_cost_breakdown.csv"
   )
 ```
-
