@@ -4,7 +4,6 @@ author: "Imperial College London"
 format: 
   revealjs:
     slide-number: true
-css: custom.css
 ---
 
 ```{r setup, include=FALSE}
@@ -52,7 +51,7 @@ r0_samples <- withr::with_seed(
   1, rbeta(100, 2, 5)
 ) * r0 + 1.0
 r0_samples <- round(r0_samples, 4)
-r0_samples <- scales::rescale(r0_samples, c(1.3, 1.9))
+r0_samples <- scales::rescale(r0_samples, c(1.15, 1.5))
 r0_samples <- sort(r0_samples)
 ```
 
@@ -117,7 +116,7 @@ hosp_capacity <- gbr$hospital_capacity
 output <- run_scenarios(
   "GBR",
   disease_list,
-  response = list(response),
+  response = list("none", response),
   response_time_start = response_start,
   response_time_end = response_end,
   duration = horizon
@@ -130,7 +129,7 @@ output <- run_scenarios(
 data_epi_curve <- get_epicurve_data(output, disease_tags, format = "long")
 
 data_epi_curve_summary <- group_by(
-  data_epi_curve, time, measure
+  data_epi_curve, time, measure, response
 ) %>%
   curve_interval(
     value,
@@ -183,6 +182,8 @@ curve_measure_labels <- c(
   daily_deaths = "New deaths"
 )
 
+response_labels = c(none = "Unmitigated", custom_response_1 = "Custom")
+
 plots_epi_curves <- Map(
   measures, curve_measure_labels,
   f = function(m, l) {
@@ -207,6 +208,12 @@ plots_epi_curves <- Map(
         aes(time, value, ymin = .lower, ymax = .upper),
         col = "black",
         alpha = 0.8
+      ) +
+      facet_grid(
+        cols = vars(response),
+        labeller = labeller(
+          response = response_labels
+        )
       ) +
       geom_vline(
         xintercept = day_now,
@@ -298,13 +305,22 @@ ggplot(
     aes(y = value),
     .width = c(0.5, 0.95)
   ) +
-  facet_wrap(
-    facets = vars(measure),
+  facet_grid(
+    cols = vars(response),
+    rows = vars(measure),
     labeller = labeller(
-      measure = summary_measure_labels
+      measure = summary_measure_labels,
+      response = response_labels
     ),
     scales = "free"
   ) +
+  # facet_wrap(
+  #   facets = vars(measure),
+  #   labeller = labeller(
+  #     measure = summary_measure_labels
+  #   ),
+  #   scales = "free"
+  # ) +
   scale_y_continuous(
     labels = scales::comma
   ) +
@@ -351,6 +367,15 @@ ggplot(data_deaths) +
   stat_pointinterval(
     aes(age_group, y = value),
     .width = c(0.5, 0.95),
+  ) +
+  facet_grid(
+    cols = vars(response),
+    rows = vars(measure),
+    labeller = labeller(
+      measure = summary_measure_labels,
+      response = response_labels
+    ),
+    scales = "free"
   ) +
   scale_y_continuous(
     labels = scales::comma
@@ -402,6 +427,15 @@ ggplot(data_cost_output) +
     aes(domain, cost),
     .width = c(0.5, 0.95),
   ) +
+  facet_grid(
+    cols = vars(response),
+    # rows = vars(measure),
+    labeller = labeller(
+      measure = summary_measure_labels,
+      response = response_labels
+    ),
+    scales = "free"
+  ) +
   scale_x_discrete(
     labels = loss_measure_labels
   ) +
@@ -442,10 +476,11 @@ gbr <- daedalus_country("GBR")
 hosp_capacity <- gbr$hospital_capacity
 
 # prepare outcomes for two scenarios
+# prepare outcomes for two scenarios
 output <- run_scenarios(
   "GBR",
   disease_list,
-  response = list(response),
+  response = list("none", response),
   response_time_start = response_start,
   response_time_end = response_end,
   duration = horizon
@@ -539,6 +574,15 @@ plots_epi_curves <- Map(
         xintercept = day_now,
         col = "red", linetype = "dashed"
       ) +
+      facet_grid(
+        cols = vars(response),
+        rows = vars(measure),
+        labeller = labeller(
+          measure = summary_measure_labels,
+          response = response_labels
+        ),
+        scales = "free"
+      ) +
       scale_fill_viridis_d(
         begin = 0.1, direction = -1,
         labels = function(x) {
@@ -623,10 +667,12 @@ ggplot(
     aes(y = value),
     .width = c(0.5, 0.95)
   ) +
-  facet_wrap(
-    facets = vars(measure),
+  facet_grid(
+    cols = vars(response),
+    rows = vars(measure),
     labeller = labeller(
-      measure = summary_measure_labels
+      measure = summary_measure_labels,
+      response = response_labels
     ),
     scales = "free"
   ) +
@@ -676,6 +722,15 @@ ggplot(data_deaths) +
   stat_pointinterval(
     aes(age_group, y = value),
     .width = c(0.5, 0.95),
+  ) +
+  facet_grid(
+    cols = vars(response),
+    # rows = vars(measure),
+    labeller = labeller(
+      measure = summary_measure_labels,
+      response = response_labels
+    ),
+    scales = "free"
   ) +
   scale_y_continuous(
     labels = scales::comma
@@ -727,6 +782,15 @@ ggplot(data_cost_output) +
     aes(domain, cost),
     .width = c(0.5, 0.95),
   ) +
+  facet_grid(
+    cols = vars(response),
+    # rows = vars(measure),
+    labeller = labeller(
+      measure = summary_measure_labels,
+      response = response_labels
+    ),
+    scales = "free"
+  ) +
   scale_x_discrete(
     labels = loss_measure_labels
   ) +
@@ -752,5 +816,23 @@ ggplot(data_cost_output) +
     )
   ) +
   theme_bw(24, "Arial") +
+  fn_theme()
+```
+
+# Additional information
+
+## R0 distribution
+
+```{r}
+ggplot() +
+  stat_histinterval(
+    aes(r0_samples),
+    fill = "red", alpha = 0.5
+  ) +
+  labs(
+    x = "R0", y = NULL
+  ) +
+  theme_bw(24, "Arial") +
+  theme(axis.text.y = element_blank()) +
   fn_theme()
 ```
